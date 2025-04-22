@@ -1,87 +1,31 @@
-# Welcome to React Router!
+# Labyrintenfinale 2025
 
-A modern, production-ready template for building full-stack React applications using React Router.
+Dette repoet er utgangspunkt for caseoppgaven i Labyrintenfinalen 2025. Her kan dere se et eksempel på en enkel frontendapp i React + Typescript + Vite og en enkel Express + TypeScript backend med et api for tips.
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
+## Kom i gang
 
-## Features
+### Førstegangsoppsett
 
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
+1. Klon dette repoet til din lokale maskin. Åpne terminalen, naviger til mappen du vil ha repoet i og skriv kommandoen `git clone git@github.com:bekk/labyrintenfinale-case-2025.git`.
+2. Sjekk at du har node og npm installert på din maskin med `npm --version` og `node --version`. Hvis du på en av disse får `command not found`, må du installere det, feks med brew. Spør gjerne en coach om hjelp!
 
-## Getting Started
+### Kjøre opp backend
 
-### Installation
+1. Naviger inn i backend med `cd backend`.
+2. Kjør `npm install` for å installere avhengigheter for backend.
+3. Kjør `npm run dev` for å kjøre opp backend. Denne vil da starte opp på port 8080.
+4. Åpne en nettleser på `localhost:8080/api/tips` for å verifisere at backend kjører.
 
-Install the dependencies:
+### Kjøre opp frontend
 
-```bash
-npm install
-```
+1. Åpne nytt terminalvindu og naviger til roten av repoet.
+2. Kjør `npm install` for å installere avhengigheter for frontend.
+3. Kjør `npm run dev`for å kjøre opp frontend. Den vil da starte opp på port 3000.
+4. Åpne nettleser på `localhost:3000` for å verifisere at frontend kjører.
+5. Hvis alt er satt opp riktig, så kan du også aksessere backend fra frontend på `localhost:3000/api/tips`. Dette er fordi vi har satt opp en proxy i viteconfigen som gjør at alle forespørseler til `/api` blir sendt til backend.
 
-### Development
+## Få ting ut i den store verden
 
-Start the development server with HMR:
+Vi bruker Heroku for å hoste appen: https://labyrintenfinale-case-2025-8dcc901f9af9.herokuapp.com/.
 
-```bash
-npm run dev
-```
-
-Your application will be available at `http://localhost:5173`.
-
-## Building for Production
-
-Create a production build:
-
-```bash
-npm run build
-```
-
-## Deployment
-
-### Docker Deployment
-
-To build and run using Docker:
-
-```bash
-docker build -t my-app .
-
-# Run the container
-docker run -p 3000:3000 my-app
-```
-
-The containerized application can be deployed to any platform that supports Docker, including:
-
-- AWS ECS
-- Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
-- Railway
-
-### DIY Deployment
-
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
-
-Make sure to deploy the output of `npm run build`
-
-```
-├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
-├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
-```
-
-## Styling
-
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
-
----
-
-Built with ❤️ using React Router.
+For å dytte ting ut hit trenger dere bare å pushe til git, så fikser heroku pipeline resten. Om dere trenger å gjøre noen endringer i Heroku, kan dere ta kontakt med en av oss coacher!

@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const port: string | number = process.env.PORT || 5174;
+const port: string | number = process.env.PORT || 8080;
 
 // Body parsing Middleware
 app.use(express.json());
