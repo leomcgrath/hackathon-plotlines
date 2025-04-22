@@ -18,16 +18,14 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api", tipsRoute);
 
 // Serve static files for the built React app
-const buildPath = path.resolve(__dirname, "..", "frontend", "build");
+const buildPath = path.resolve(__dirname, "..", ".", "build/client");
 app.use("/", express.static(buildPath));
 
 
-/* TODO: todo
 // Catch-all to serve index.html for any other route
 app.use("*", (_: Request, res: Response) =>
   res.sendFile(path.resolve(buildPath, "index.html"))
 );
- */
 
 try {
   app.listen(port, () => {
