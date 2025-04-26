@@ -13,7 +13,7 @@ type PersonRow = {
   name: string;
   pictureURL: string | null;
   bio: string | null;
-  arrived: number;
+  arrived: number | null;
   deactivated: number | null;
 };
 
@@ -33,9 +33,9 @@ type EnemyRow = {
 };
 
 type PairRow = {
-  friend_1: number;
-  friend_2: number;
-  episode: number; // <-- important fix!
+  pair_1: number;
+  pair_2: number;
+  episode: number;
 };
 
 type NodeData = {
@@ -53,7 +53,7 @@ const PALETTE = [
   '#6a3d9a', '#ff9f80', '#008080', '#808000',
 ];
 
-// cytoscape default style
+// cytoscape style
 const defaultStyle = [
   {
     selector: 'node',
@@ -63,7 +63,7 @@ const defaultStyle = [
       'background-clip': 'node',
       'background-color': '#0074D9',
       'label': '',
-      'border-width': 0,
+      'border-width': 2,
       'border-color': 'data(borderColor)',
       'border-style': 'data(borderStyle)',
       'width': 50,
@@ -143,19 +143,24 @@ const NodeMap: React.FC = () => {
       const [
         { data: p, error: pErr },
         { data: f, error: fErr },
+        { data: e, error: eErr },
+        { data: pr, error: prErr },
       ] = await Promise.all([
-        supabase.from<'people', PersonRow>('people').select('id, name, pictureURL, bio, arrived, deactivated'),
-        supabase.from<'friends', FriendRow>('friends').select('friend_1, friend_2, emoji, context, episode'),
-        supabase.from<'pairs', PairRow>('pairs').select('friend_1, friend_2, episode'),
+        supabase.from('people').select('id, name, pictureURL, bio, arrived, deactivated'),
+        supabase.from('friends').select('friend_1, friend_2, emoji, context, episode'),
+        supabase.from('enemies').select('enemy_1, enemy_2, emoji, context'),
+        supabase.from('pairs').select('pair_1, pair_2, episode'),
       ]);
 
-      if (pErr || fErr) {
-        console.error('Error fetching data:', pErr, fErr,);
+      if (pErr || fErr || eErr || prErr) {
+        console.error('Error fetching data:', pErr, fErr, eErr, prErr);
         return;
       }
 
       setPeople(p || []);
       setFriends(f || []);
+      setEnemies(e || []);
+      setPairs(pr || []);
     };
     loadData();
   }, []);
@@ -167,26 +172,29 @@ const NodeMap: React.FC = () => {
       .filter(p => p.episode === selectedEpisode)
       .forEach((pr, i) => {
         const col = PALETTE[i % PALETTE.length];
-        colorMap[String(pr.friend_1)] = col;
-        colorMap[String(pr.friend_2)] = col;
+        colorMap[String(pr.pair_1)] = col;
+        colorMap[String(pr.pair_2)] = col;
       });
 
-    const nodes = people
-      .filter(p => p.arrived <= selectedEpisode)
+      const nodes = people
+      .filter(p => p.arrived !== null && p.arrived <= selectedEpisode)
       .map(p => {
         const isInactive = p.deactivated !== null && p.deactivated <= selectedEpisode;
+        const hasPair = colorMap[String(p.id)] !== undefined;
+    
         return {
           data: {
             id: String(p.id),
             label: p.name,
             pictureURL: p.pictureURL || undefined,
             bio: p.bio || undefined,
-            borderColor: colorMap[String(p.id)] || '#f00',
-            borderStyle: colorMap[String(p.id)] ? 'solid' : 'dotted',
+            borderColor: hasPair ? colorMap[String(p.id)] : undefined,
+            borderStyle: hasPair ? 'solid' : undefined,
           },
           classes: isInactive ? 'inactive' : '',
         };
       });
+    
 
     const friendEdges = friends
       .filter(f => f.episode === selectedEpisode)
