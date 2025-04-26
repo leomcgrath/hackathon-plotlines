@@ -48,7 +48,7 @@ type NodeData = {
   bio?: string;
   borderColor?: string;
   borderStyle?: string;
-  deactivatedAt?: number | null; // 👈 legger til deaktivert info her
+  deactivatedAt?: number | null; // 👈 Add deactivated info here
 };
 
 type EdgeData = {
@@ -177,6 +177,10 @@ const NodeMap: React.FC = () => {
         colorMap[String(pr.pair_2)] = col;
       });
 
+    // Get a set of valid node IDs from the people data
+    const validPeopleIds = new Set(people.map(p => String(p.id)));
+
+    // Filter and map nodes
     const nodes = people
       .filter(p => p.arrived !== null && p.arrived <= selectedEpisode)
       .map(p => ({
@@ -192,8 +196,10 @@ const NodeMap: React.FC = () => {
         classes: p.deactivated !== null && p.deactivated <= selectedEpisode ? 'inactive' : '',
       }));
 
+    // Filter invalid friend edges by checking if both friend_1 and friend_2 exist in validPeopleIds
     const friendEdges = friends
       .filter(f => f.episode === selectedEpisode)
+      .filter(f => validPeopleIds.has(String(f.friend_1)) && validPeopleIds.has(String(f.friend_2))) // Only keep valid friends
       .map((f, i) => ({
         data: {
           id: `fr${i}`,
@@ -206,16 +212,19 @@ const NodeMap: React.FC = () => {
         },
       }));
 
-    const enemyEdges = enemies.map((e, i) => ({
-      data: {
-        id: `en${i}`,
-        source: String(e.enemy_1),
-        target: String(e.enemy_2),
-        type: 'enemy',
-        emoji: e.emoji,
-        context: e.context,
-      },
-    }));
+    // Filter invalid enemy edges by checking if both enemy_1 and enemy_2 exist in validPeopleIds
+    const enemyEdges = enemies
+      .filter(e => validPeopleIds.has(String(e.enemy_1)) && validPeopleIds.has(String(e.enemy_2))) // Only keep valid enemies
+      .map((e, i) => ({
+        data: {
+          id: `en${i}`,
+          source: String(e.enemy_1),
+          target: String(e.enemy_2),
+          type: 'enemy',
+          emoji: e.emoji,
+          context: e.context,
+        },
+      }));
 
     setElements([...nodes, ...friendEdges, ...enemyEdges]);
   }, [people, friends, enemies, pairs, selectedEpisode]);

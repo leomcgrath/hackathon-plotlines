@@ -5,7 +5,7 @@ export default function ParadiseHotel() {
   const navigate = useNavigate();
 
   const handleNavigation = () => {
-    navigate("/");
+    navigate("/home");
   };
 
   return (
