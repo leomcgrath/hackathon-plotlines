@@ -13,7 +13,7 @@ export default function Home() {
   return (
     <>
       <div className="width-full h-screen bg-white flex flex-row items-center justify-center">
-        <NodeMap/>
+        <AdminPanel/>
       </div>
     </>
   );

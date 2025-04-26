@@ -62,8 +62,9 @@ const defaultStyle = [
       'curve-style': 'straight',
       label: 'data(emoji)',
       'font-size': 14,
-      'text-rotation': 'autorotate',
-      'text-margin-y': -10,
+      'text-rotation': 'none',
+      'text-justification': 'center',
+      'text-margin-y': 0,
       'text-background-opacity': 0,
     } as any,
   },
@@ -73,6 +74,9 @@ const defaultStyle = [
       'line-color': 'green',
       'text-fill': 'green',
       'text-background-opacity': 0,
+      'text-rotation': 'none',
+      'text-justification': 'center',
+      'text-margin-y': 0,
     } as any,
   },
   {
@@ -81,6 +85,9 @@ const defaultStyle = [
       'line-color': 'red',
       'text-fill': 'red',
       'text-background-opacity': 0,
+      'text-rotation': 'none',
+      'text-justification': 'center',
+      'text-margin-y': 0,
     } as any,
   },
 ];
@@ -126,11 +133,13 @@ const NodeMap: React.FC = () => {
         data: {
           id: String(p.id),
           label: p.name,
+          labelLength: p.name.length,   
           pictureURL: p.pictureURL || undefined,
           bio: p.bio || undefined,
         },
         classes: p.isActive ? '' : 'inactive',
       }));
+      
 
       const friendEdges = (friends || []).map((f, i) => ({
         data: {
@@ -200,41 +209,31 @@ const NodeMap: React.FC = () => {
     <>
       <div
         ref={containerRef}
-        style={{ width: '60%', height: '100vh', backgroundColor: '#f0f0f0' }}
+        className="w-full h-screen bg-gray-100"
       />
 
       {selectedNode && (
         <div
-          style={{
-            position: 'fixed',
-            top: 0, left: 0,
-            width: '100%', height: '100%',
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
+          className="fixed inset-0 bg-black/25 flex items-center justify-center"
           onClick={() => setSelectedNode(null)}
         >
           <div
-            style={{
-              background: '#fff',
-              padding: 20,
-              borderRadius: 8,
-              maxWidth: 400,
-              maxHeight: '80%',
-              overflowY: 'auto',
-            }}
+            className="bg-white p-5 rounded-lg max-w-md max-h-[80%] overflow-y-auto z-10"
             onClick={e => e.stopPropagation()}
           >
-            <h3 style={{ marginTop: 0 }}>{selectedNode.label}</h3>
+            <h3 className="text-xl font-semibold">{selectedNode.label}</h3>
             {selectedNode.pictureURL && (
               <img
                 src={selectedNode.pictureURL}
                 alt={selectedNode.label}
-                style={{ width: '100%', borderRadius: 4, marginBottom: 12 }}
+                className="w-full rounded mb-3"
               />
             )}
-            <p className="text-black">{selectedNode.bio}</p>
-            <button onClick={() => setSelectedNode(null)} style={{ marginTop: 12 }}>
+            <p className="text-gray-800">{selectedNode.bio}</p>
+            <button
+              onClick={() => setSelectedNode(null)}
+              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
               Close
             </button>
           </div>
@@ -242,35 +241,21 @@ const NodeMap: React.FC = () => {
       )}
 
       {selectedEdge && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0, left: 0,
-            width: '100%', height: '100%',
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
+        <div className="fixed inset-0 bg-black/25 flex items-center justify-center"
           onClick={() => setSelectedEdge(null)}
         >
           <div
-            style={{
-              background: '#fff',
-              padding: 20,
-              borderRadius: 8,
-              maxWidth: 400,
-              maxHeight: '80%',
-              overflowY: 'auto',
-              color: 'black',
-            }}
+            className="bg-white p-5 rounded-lg max-w-md max-h-[80%] overflow-y-auto z-10"
             onClick={e => e.stopPropagation()}
           >
-            <p style={{ fontSize: '2rem', margin: '0.5em 0' }}>
-              {selectedEdge.emoji}
+            <p className="text-4xl mb-4">{selectedEdge.emoji}</p>
+            <p className="mb-4 text-gray-800">
+              {selectedEdge.context || 'Ingen kontekst'}
             </p>
-            <p style={{ marginBottom: '1em' }}>
-              {selectedEdge.context}
-            </p>
-            <button onClick={() => setSelectedEdge(null)} style={{ marginTop: 12 }}>
+            <button
+              onClick={() => setSelectedEdge(null)}
+              className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+            >
               Close
             </button>
           </div>
