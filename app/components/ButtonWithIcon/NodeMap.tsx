@@ -1,11 +1,13 @@
+'use client';
 import React, { useState, useRef, useEffect } from 'react';
 import cytoscape, { type Core, type ElementDefinition } from 'cytoscape';
 import { createClient } from '@supabase/supabase-js';
 
 // Supabase setup
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL!;
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, anonKey);
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL!,
+  import.meta.env.VITE_SUPABASE_ANON_KEY!
+);
 
 // --- Types ---
 type PersonRow = {
@@ -23,6 +25,7 @@ type FriendRow = {
   emoji: string | null;
   context: string | null;
   episode: number;
+  imageURL?: string | null; // ← NEW, optional because it might not exist yet
 };
 
 type EnemyRow = {
@@ -47,6 +50,16 @@ type NodeData = {
   borderStyle?: string;
 };
 
+type EdgeData = {
+  id: string;
+  source: string;
+  target: string;
+  type: 'friend' | 'enemy';
+  emoji: string;
+  context: string;
+  imageURL?: string;
+};
+
 // color palette for pairs
 const PALETTE = [
   '#f032e6', '#f58231', '#46f0f0', '#ffe119',
@@ -68,7 +81,7 @@ const defaultStyle = [
       'border-style': 'data(borderStyle)',
       'width': 50,
       'height': 50,
-    } as any,
+    },
   },
   {
     selector: 'node.inactive',
@@ -79,7 +92,7 @@ const defaultStyle = [
       'border-color': '#000',
       'border-style': 'solid',
       'background-color': '#ccc',
-    } as any,
+    },
   },
   {
     selector: 'edge',
@@ -88,25 +101,23 @@ const defaultStyle = [
       'line-color': '#aaa',
       label: 'data(emoji)',
       'font-size': 14,
-      'text-rotation': 'none',
-      'text-justification': 'center',
-      'text-margin-y': 0,
-      'text-background-opacity': 0,
-    } as any,
+      'text-rotation': 'none' as 'none',
+      'text-justification': 'center' as 'center',
+    },
   },
   {
     selector: 'edge[type="friend"]',
     style: {
       'line-color': 'green',
       'color': 'green',
-    } as any,
+    },
   },
   {
     selector: 'edge[type="enemy"]',
     style: {
       'line-color': 'red',
       'color': 'red',
-    } as any,
+    },
   },
   {
     selector: 'node[!pictureURL]',
@@ -126,13 +137,7 @@ const NodeMap: React.FC = () => {
   const [elements, setElements] = useState<ElementDefinition[]>([]);
   const [selectedEpisode, setSelectedEpisode] = useState<number>(1);
   const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);
-  const [selectedEdge, setSelectedEdge] = useState<{
-    source: string;
-    target: string;
-    type: string;
-    emoji: string;
-    context: string;
-  } | null>(null);
+  const [selectedEdge, setSelectedEdge] = useState<EdgeData | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<Core | undefined>(undefined);
@@ -141,21 +146,16 @@ const NodeMap: React.FC = () => {
   useEffect(() => {
     const loadData = async () => {
       const [
-        { data: p, error: pErr },
-        { data: f, error: fErr },
-        { data: e, error: eErr },
-        { data: pr, error: prErr },
+        { data: p },
+        { data: f },
+        { data: e },
+        { data: pr },
       ] = await Promise.all([
         supabase.from('people').select('id, name, pictureURL, bio, arrived, deactivated'),
-        supabase.from('friends').select('friend_1, friend_2, emoji, context, episode'),
+        supabase.from('friends').select('friend_1, friend_2, emoji, context, episode, imageURL'),
         supabase.from('enemies').select('enemy_1, enemy_2, emoji, context'),
         supabase.from('pairs').select('pair_1, pair_2, episode'),
       ]);
-
-      if (pErr || fErr || eErr || prErr) {
-        console.error('Error fetching data:', pErr, fErr, eErr, prErr);
-        return;
-      }
 
       setPeople(p || []);
       setFriends(f || []);
@@ -165,7 +165,7 @@ const NodeMap: React.FC = () => {
     loadData();
   }, []);
 
-  // 2️⃣ Recompute elements on data or episode change
+  // 2️⃣ Recompute elements
   useEffect(() => {
     const colorMap: Record<string, string> = {};
     pairs
@@ -176,25 +176,19 @@ const NodeMap: React.FC = () => {
         colorMap[String(pr.pair_2)] = col;
       });
 
-      const nodes = people
+    const nodes = people
       .filter(p => p.arrived !== null && p.arrived <= selectedEpisode)
-      .map(p => {
-        const isInactive = p.deactivated !== null && p.deactivated <= selectedEpisode;
-        const hasPair = colorMap[String(p.id)] !== undefined;
-    
-        return {
-          data: {
-            id: String(p.id),
-            label: p.name,
-            pictureURL: p.pictureURL || undefined,
-            bio: p.bio || undefined,
-            borderColor: hasPair ? colorMap[String(p.id)] : undefined,
-            borderStyle: hasPair ? 'solid' : undefined,
-          },
-          classes: isInactive ? 'inactive' : '',
-        };
-      });
-    
+      .map(p => ({
+        data: {
+          id: String(p.id),
+          label: p.name,
+          pictureURL: p.pictureURL ?? undefined,
+          bio: p.bio ?? undefined,
+          borderColor: colorMap[String(p.id)] ?? undefined,
+          borderStyle: colorMap[String(p.id)] ? 'solid' : undefined,
+        },
+        classes: p.deactivated !== null && p.deactivated <= selectedEpisode ? 'inactive' : '',
+      }));
 
     const friendEdges = friends
       .filter(f => f.episode === selectedEpisode)
@@ -206,6 +200,7 @@ const NodeMap: React.FC = () => {
           type: 'friend',
           emoji: f.emoji ?? '',
           context: f.context ?? '',
+          imageURL: f.imageURL ?? undefined,
         },
       }));
 
@@ -223,7 +218,7 @@ const NodeMap: React.FC = () => {
     setElements([...nodes, ...friendEdges, ...enemyEdges]);
   }, [people, friends, enemies, pairs, selectedEpisode]);
 
-  // 3️⃣ Initialize Cytoscape once
+  // 3️⃣ Initialize Cytoscape
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -234,25 +229,29 @@ const NodeMap: React.FC = () => {
       layout: { name: 'cose', animate: true, fit: true },
     });
 
-    cyRef.current.on('tap', 'node', evt => setSelectedNode((evt.target as any).data()));
     cyRef.current.on('tap', 'node', evt => {
-      const nodeData = evt.target.data();
-    
+      const node = evt.target.data();
       setSelectedNode({
-        id: nodeData.id,
-        label: nodeData.label,
-        pictureURL: nodeData.pictureURL,
-        bio: nodeData.bio,
-        borderColor: nodeData.borderColor,
-        borderStyle: nodeData.borderStyle,
+        id: node.id,
+        label: node.label,
+        pictureURL: node.pictureURL,
+        bio: node.bio,
+        borderColor: node.borderColor,
+        borderStyle: node.borderStyle,
       });
+      setSelectedEdge(null);
     });
-    
+
+    cyRef.current.on('tap', 'edge', evt => {
+      const edge = evt.target.data();
+      setSelectedEdge(edge);
+      setSelectedNode(null);
+    });
 
     return () => { cyRef.current?.destroy(); };
   }, []);
 
-  // 4️⃣ Update Cytoscape graph when elements change
+  // 4️⃣ Update graph
   useEffect(() => {
     if (!cyRef.current) return;
 
@@ -265,56 +264,58 @@ const NodeMap: React.FC = () => {
   }, [elements]);
 
   return (
-    <>
-      <div className="flex flex-col h-screen w-screen bg-gray-800">
-
-        {/* Episode filter */}
-        <div className="flex justify-center space-x-2 p-4 bg-gray-800 w-full h-16">
-          <button className="px-3 py-1 rounded text-sm font-medium bg-gray-600 text-gray-200">
-            Episoder:
+    <div className="flex flex-col h-screen w-screen bg-gray-800">
+      {/* Episode filter */}
+      <div className="flex justify-center space-x-2 p-4 w-full h-16 bg-gray-800">
+        <button className="px-3 py-1 rounded text-sm font-medium bg-gray-600 text-gray-200">
+          Episoder:
+        </button>
+        {Array.from({ length: 17 }, (_, i) => (
+          <button
+            key={i}
+            onClick={() => setSelectedEpisode(i + 1)}
+            className={`px-4 py-2 rounded text-base font-medium ${selectedEpisode === i + 1 ? 'bg-blue-500 text-white' : 'bg-gray-600 text-gray-200 hover:bg-gray-500'}`}
+          >
+            {i + 1}
           </button>
-          {Array.from({ length: 17 }, (_, i) => (
-            <button
-              key={i + 1}
-              onClick={() => setSelectedEpisode(i + 1)}
-              className={`px-4 py-2 rounded text-base font-medium ${selectedEpisode === i + 1 ? 'bg-blue-500 text-white' : 'bg-gray-600 text-gray-200 hover:bg-gray-500'}`}
-            >
-              {i + 1}
-            </button>
-          ))}
-        </div>
-
-        {/* Graph */}
-        <div ref={containerRef} className="w-full h-[calc(100vh-64px)] bg-gradient-to-br from-gray-900 via-purple-900 to-black" />
-
-        {/* Node Modal */}
-        {selectedNode && (
-          <div className="fixed inset-0 bg-black/25 flex items-center justify-center text-black" onClick={() => setSelectedNode(null)}>
-            <div className="bg-white p-5 rounded-lg max-w-md max-h-[80%] overflow-y-auto z-10" onClick={e => e.stopPropagation()}>
-              <h3 className="text-xl font-semibold mb-2">{selectedNode.label}</h3>
-              {selectedNode.pictureURL && <img src={selectedNode.pictureURL} alt={selectedNode.label} className="w-full rounded mb-3" />}
-              <p className="text-gray-800 whitespace-pre-wrap">{selectedNode.bio}</p>
-              <button onClick={() => setSelectedNode(null)} className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                Close
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Edge Modal */}
-        {selectedEdge && (
-          <div className="fixed inset-0 bg-black/25 flex items-center justify-center" onClick={() => setSelectedEdge(null)}>
-            <div className="bg-white p-5 rounded-lg max-w-md max-h-[80%] overflow-y-auto z-10" onClick={e => e.stopPropagation()}>
-              <p className="text-4xl mb-4">{selectedEdge.emoji}</p>
-              <p className="mb-4 text-gray-800 whitespace-pre-wrap">{selectedEdge.context || 'No context'}</p>
-              <button onClick={() => setSelectedEdge(null)} className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
-                Close
-              </button>
-            </div>
-          </div>
-        )}
+        ))}
       </div>
-    </>
+
+      {/* Graph */}
+      <div ref={containerRef} className="w-full h-[calc(100vh-64px)] bg-gradient-to-br from-gray-900 via-purple-900 to-black" />
+
+      {/* Node Modal */}
+      {selectedNode && (
+        <div className="fixed inset-0 bg-black/25 flex items-center justify-center text-black" onClick={() => setSelectedNode(null)}>
+          <div className="bg-white p-5 rounded-lg max-w-md max-h-[80%] overflow-y-auto z-10" onClick={e => e.stopPropagation()}>
+            <h3 className="text-xl font-semibold mb-2">{selectedNode.label}</h3>
+            {selectedNode.pictureURL && (
+              <img src={selectedNode.pictureURL} alt={selectedNode.label} className="w-full rounded mb-3" />
+            )}
+            <p className="text-gray-800 whitespace-pre-wrap">{selectedNode.bio}</p>
+            <button onClick={() => setSelectedNode(null)} className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Edge Modal */}
+      {selectedEdge && (
+        <div className="fixed inset-0 bg-black/25 flex items-center justify-center" onClick={() => setSelectedEdge(null)}>
+          <div className="bg-white p-5 rounded-lg max-w-md max-h-[80%] overflow-y-auto z-10" onClick={e => e.stopPropagation()}>
+            <p className="text-4xl mb-4">{selectedEdge.emoji}</p>
+            {selectedEdge.imageURL && (
+              <img src={selectedEdge.imageURL} alt="Edge Event" className="w-full rounded mb-3" />
+            )}
+            <p className="text-gray-800 whitespace-pre-wrap">{selectedEdge.context || 'No context'}</p>
+            <button onClick={() => setSelectedEdge(null)} className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

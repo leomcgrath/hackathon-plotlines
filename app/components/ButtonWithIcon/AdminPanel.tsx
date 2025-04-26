@@ -22,6 +22,7 @@ type FriendConn = {
   emoji: string | null;
   context: string | null;
   episode: number;
+  imageURL: string | null;
 };
 
 type PairConn = {
@@ -46,6 +47,7 @@ const AdminPanel: React.FC = () => {
   const [secondFriend, setSecondFriend] = useState<number | ''>('');
   const [friendEmoji, setFriendEmoji] = useState('');
   const [friendContext, setFriendContext] = useState('');
+  const [friendImageURL, setFriendImageURL] = useState('');
   const [friendEpisode, setFriendEpisode] = useState<number>(1);
 
   // Pair form
@@ -62,7 +64,7 @@ const AdminPanel: React.FC = () => {
         { data: pr, error: prErr }
       ] = await Promise.all([
         supabase.from('people').select<string, Person>('id, name, pictureURL, bio').order('name'),
-        supabase.from('friends').select<string, FriendConn>('friend_1, friend_2, emoji, context, episode'),
+        supabase.from('friends').select<string, FriendConn>('friend_1, friend_2, emoji, context, episode, imageURL'),
         supabase.from('pairs').select<string, PairConn>('pair_1, pair_2, episode')
       ]);
 
@@ -98,7 +100,14 @@ const AdminPanel: React.FC = () => {
     if (!firstFriend || !secondFriend || firstFriend === secondFriend) return;
     const { data, error } = await supabase
       .from('friends')
-      .insert({ friend_1: firstFriend, friend_2: secondFriend, emoji: friendEmoji || null, context: friendContext || null, episode: friendEpisode })
+      .insert({
+        friend_1: firstFriend,
+        friend_2: secondFriend,
+        emoji: friendEmoji || null,
+        context: friendContext || null,
+        episode: friendEpisode,
+        imageURL: friendImageURL || null,
+      })
       .select()
       .single();
     if (error) console.error(error);
@@ -108,6 +117,7 @@ const AdminPanel: React.FC = () => {
       setSecondFriend('');
       setFriendEmoji('');
       setFriendContext('');
+      setFriendImageURL('');
       setFriendEpisode(1);
     }
   };
@@ -141,6 +151,7 @@ const AdminPanel: React.FC = () => {
   // --- UI ---
   return (
     <div className="p-6 h-[calc(100vh-100px)] overflow-auto w-full max-w-3xl mx-auto space-y-10 bg-white shadow-lg rounded-lg text-gray-800">
+      
       {/* PEOPLE */}
       <section>
         <h2 className="text-2xl font-bold mb-4">Manage People</h2>
@@ -187,10 +198,26 @@ const AdminPanel: React.FC = () => {
             </select>
           </div>
           <div className="flex gap-2">
-            <input placeholder="Emoji" value={friendEmoji} onChange={e => setFriendEmoji(e.target.value)} className="border rounded px-2 py-1 w-24" />
-            <input placeholder="Context" value={friendContext} onChange={e => setFriendContext(e.target.value)} className="border rounded px-2 py-1 flex-1" />
+            <input
+              placeholder="Emoji"
+              value={friendEmoji}
+              onChange={e => setFriendEmoji(e.target.value)}
+              className="border rounded px-2 py-1 w-24"
+            />
+            <input
+              placeholder="Context"
+              value={friendContext}
+              onChange={e => setFriendContext(e.target.value)}
+              className="border rounded px-2 py-1 flex-1"
+            />
+            <input
+              placeholder="Image URL"
+              value={friendImageURL}
+              onChange={e => setFriendImageURL(e.target.value)}
+              className="border rounded px-2 py-1 flex-1"
+            />
             <select value={friendEpisode} onChange={e => setFriendEpisode(Number(e.target.value))} className="border rounded px-2 py-1 w-24">
-              {Array.from({ length: 10 }, (_, i) => <option key={i+1} value={i+1}>Ep {i+1}</option>)}
+              {Array.from({ length: 17 }, (_, i) => <option key={i+1} value={i+1}>Ep {i+1}</option>)}
             </select>
             <button onClick={addFriend} className="bg-green-600 text-white px-4 py-1 rounded">Add Event</button>
           </div>
@@ -199,7 +226,10 @@ const AdminPanel: React.FC = () => {
         <ul className="space-y-1">
           {friends.map(f => (
             <li key={`${f.friend_1}-${f.friend_2}-${f.episode}`} className="flex justify-between items-center">
-              <span>{people.find(p => p.id === f.friend_1)?.name} → {people.find(p => p.id === f.friend_2)?.name} [Ep {f.episode}] {f.emoji && <strong>{f.emoji}</strong>} {f.context && <>({f.context})</>}</span>
+              <span>
+                {people.find(p => p.id === f.friend_1)?.name} → {people.find(p => p.id === f.friend_2)?.name} 
+                [Ep {f.episode}] {f.emoji && <strong>{f.emoji}</strong>} {f.context && <>({f.context})</>}
+              </span>
               <button onClick={() => removeFriend(f.friend_1, f.friend_2, f.episode)} className="text-red-600 hover:underline">Remove</button>
             </li>
           ))}
@@ -238,6 +268,7 @@ const AdminPanel: React.FC = () => {
           ))}
         </ul>
       </section>
+
     </div>
   );
 };
