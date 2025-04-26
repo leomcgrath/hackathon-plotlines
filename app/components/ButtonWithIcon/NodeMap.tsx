@@ -29,12 +29,30 @@ type EnemyRow = {
   context: string;
 };
 
+type PairRow = { friend_1: number; friend_2: number };
+
 type NodeData = {
   id: string;
   label: string;
   pictureURL?: string;
   bio?: string;
+  borderColor?: string;
+  borderStyle?: string;
 };
+
+// color palette for pairs
+const PALETTE = [
+  '#4363d8', // blue
+  '#f032e6', // magenta
+  '#f58231', // orange
+  '#911eb4', // purple
+  '#46f0f0', // cyan
+  '#ffe119', // yellow
+  '#6a3d9a', // deep purple
+  '#ff9f80', // coral
+  '#008080', // teal
+  '#808000'  // olive
+];
 
 const defaultStyle = [
   {
@@ -46,12 +64,17 @@ const defaultStyle = [
       'text-valign': 'center',
       'text-halign': 'center',
       'font-size': 10,
+      'border-width': 1,
+      'border-color': 'data(borderColor)',
+      'border-style': 'data(borderStyle)',
     } as any,
   },
   {
     selector: 'node.inactive',
     style: {
       'background-color': '#ccc',
+      'border-width': 0,
+      'border-style': 'none',
     } as any,
   },
   {
@@ -112,34 +135,38 @@ const NodeMap: React.FC = () => {
         { data: people, error: pErr },
         { data: friends, error: fErr },
         { data: enemies, error: eErr },
+        { data: pairs, error: prErr },
       ] = await Promise.all([
-        supabase
-          .from<'people', PersonRow>('people')
-          .select('id, name, isActive, pictureURL, bio'),
-        supabase
-          .from<'friends', FriendRow>('friends')
-          .select('friend_1, friend_2, emoji, context'),
-        supabase
-          .from<'enemies', EnemyRow>('enemies')
-          .select('enemy_1, enemy_2, emoji, context'),
+        supabase.from<'people', PersonRow>('people').select('id, name, isActive, pictureURL, bio'),
+        supabase.from<'friends', FriendRow>('friends').select('friend_1, friend_2, emoji, context'),
+        supabase.from<'enemies', EnemyRow>('enemies').select('enemy_1, enemy_2, emoji, context'),
+        supabase.from<'pairs', PairRow>('pairs').select('friend_1, friend_2'),
       ]);
 
-      if (pErr || fErr || eErr) {
-        console.error(pErr || fErr || eErr);
+      if (pErr || fErr || eErr || prErr) {
+        console.error(pErr || fErr || eErr || prErr);
         return;
       }
+
+      // build color map for pairs
+      const colorMap: Record<string,string> = {};
+      (pairs || []).forEach((pr, i) => {
+        const col = PALETTE[i % PALETTE.length];
+        colorMap[String(pr.friend_1)] = col;
+        colorMap[String(pr.friend_2)] = col;
+      });
 
       const nodes = (people || []).map(p => ({
         data: {
           id: String(p.id),
           label: p.name,
-          labelLength: p.name.length,   
           pictureURL: p.pictureURL || undefined,
           bio: p.bio || undefined,
+          borderColor: colorMap[String(p.id)] || '#f00',
+          borderStyle: colorMap[String(p.id)] ? 'solid' : 'dotted',
         },
         classes: p.isActive ? '' : 'inactive',
       }));
-      
 
       const friendEdges = (friends || []).map((f, i) => ({
         data: {
@@ -179,8 +206,7 @@ const NodeMap: React.FC = () => {
     });
 
     cyRef.current.on('tap', 'node', evt => {
-      const d = (evt.target as any).data() as NodeData;
-      setSelectedNode(d);
+      setSelectedNode((evt.target as any).data());
     });
 
     cyRef.current.on('tap', 'edge', evt => {
@@ -194,70 +220,36 @@ const NodeMap: React.FC = () => {
       });
     });
 
-    return () => {
-      cyRef.current?.destroy();
-    };
+    return () => { cyRef.current?.destroy(); };
   }, []);
 
   useEffect(() => {
-    if (!cyRef.current || elements.length === 0) return;
+    if (!cyRef.current) return;
     cyRef.current.json({ elements });
     cyRef.current.layout({ name: 'cose', animate: true, fit: true }).run();
   }, [elements]);
 
   return (
     <>
-      <div
-        ref={containerRef}
-        className="w-full h-screen bg-gray-100"
-      />
+      <div ref={containerRef} className="w-full h-screen bg-gray-100" />
 
       {selectedNode && (
-        <div
-          className="fixed inset-0 bg-black/25 flex items-center justify-center"
-          onClick={() => setSelectedNode(null)}
-        >
-          <div
-            className="bg-white p-5 rounded-lg max-w-md max-h-[80%] overflow-y-auto z-10"
-            onClick={e => e.stopPropagation()}
-          >
+        <div className="fixed inset-0 bg-black/25 flex items-center justify-center" onClick={() => setSelectedNode(null)}>
+          <div className="bg-white p-5 rounded-lg max-w-md max-h-[80%] overflow-y-auto z-10" onClick={e => e.stopPropagation()}>
             <h3 className="text-xl font-semibold">{selectedNode.label}</h3>
-            {selectedNode.pictureURL && (
-              <img
-                src={selectedNode.pictureURL}
-                alt={selectedNode.label}
-                className="w-full rounded mb-3"
-              />
-            )}
+            {selectedNode.pictureURL && <img src={selectedNode.pictureURL} alt={selectedNode.label} className="w-full rounded mb-3" />}
             <p className="text-gray-800">{selectedNode.bio}</p>
-            <button
-              onClick={() => setSelectedNode(null)}
-              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
-              Close
-            </button>
+            <button onClick={() => setSelectedNode(null)} className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Close</button>
           </div>
         </div>
       )}
 
       {selectedEdge && (
-        <div className="fixed inset-0 bg-black/25 flex items-center justify-center"
-          onClick={() => setSelectedEdge(null)}
-        >
-          <div
-            className="bg-white p-5 rounded-lg max-w-md max-h-[80%] overflow-y-auto z-10"
-            onClick={e => e.stopPropagation()}
-          >
+        <div className="fixed inset-0 bg-black/25 flex items-center justify-center" onClick={() => setSelectedEdge(null)}>
+          <div className="bg-white p-5 rounded-lg max-w-md max-h-[80%] overflow-y-auto z-10" onClick={e => e.stopPropagation()}>
             <p className="text-4xl mb-4">{selectedEdge.emoji}</p>
-            <p className="mb-4 text-gray-800">
-              {selectedEdge.context || 'Ingen kontekst'}
-            </p>
-            <button
-              onClick={() => setSelectedEdge(null)}
-              className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-            >
-              Close
-            </button>
+            <p className="mb-4 text-gray-800">{selectedEdge.context || 'No context'}</p>
+            <button onClick={() => setSelectedEdge(null)} className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Close</button>
           </div>
         </div>
       )}

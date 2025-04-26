@@ -135,7 +135,7 @@ const AdminPanel: React.FC = () => {
 
 
   return (
-    <div className="p-6 h-[calc(100vh-100px)] overflow-auto max-w-2xl mx-auto space-y-8 bg-white shadow-lg rounded-lg text-gray-800">
+    <div className="p-6 h-[calc(100vh-100px)] overflow-auto w-1/2 mx-auto space-y-8 bg-white shadow-lg rounded-lg text-gray-800">
       {/* PEOPLE */}
       <h2 className="text-2xl font-bold">Manage People</h2>
       <div className="flex flex-col gap-2">

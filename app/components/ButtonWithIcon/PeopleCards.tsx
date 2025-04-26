@@ -111,7 +111,7 @@ const PeopleCards: React.FC = () => {
   };
 
   return (
-    <div className="p-6 h-[calc(100vh-100px)] overflow-auto text-black">
+    <div className="p-6 h-[calc(100vh-100px)] overflow-auto text-black max-w-2xl mx-auto space-y-8 bg-white shadow-lg rounded-lg">
       {pairing && (
         <div className="mb-4 text-yellow-700">
           Pairing: {people.find(p => p.id === pairing)?.name}.&nbsp;
