@@ -25,7 +25,7 @@ type FriendRow = {
   emoji: string | null;
   context: string | null;
   episode: number;
-  imageURL?: string | null; // ← NEW, optional because it might not exist yet
+  imageURL?: string | null;
 };
 
 type EnemyRow = {
@@ -48,6 +48,7 @@ type NodeData = {
   bio?: string;
   borderColor?: string;
   borderStyle?: string;
+  deactivatedAt?: number | null; // 👈 legger til deaktivert info her
 };
 
 type EdgeData = {
@@ -186,6 +187,7 @@ const NodeMap: React.FC = () => {
           bio: p.bio ?? undefined,
           borderColor: colorMap[String(p.id)] ?? undefined,
           borderStyle: colorMap[String(p.id)] ? 'solid' : undefined,
+          deactivatedAt: p.deactivated,
         },
         classes: p.deactivated !== null && p.deactivated <= selectedEpisode ? 'inactive' : '',
       }));
@@ -238,6 +240,7 @@ const NodeMap: React.FC = () => {
         bio: node.bio,
         borderColor: node.borderColor,
         borderStyle: node.borderStyle,
+        deactivatedAt: node.deactivatedAt,
       });
       setSelectedEdge(null);
     });
@@ -282,7 +285,7 @@ const NodeMap: React.FC = () => {
       </div>
 
       {/* Graph */}
-      <div ref={containerRef} className="w-full h-[calc(100vh-64px)] bg-gradient-to-br from-gray-900 via-purple-900 to-black" />
+      <div ref={containerRef} className="w-full h-[calc(100vh-64px)] bg-#1B1B24"  />
 
       {/* Node Modal */}
       {selectedNode && (
@@ -292,7 +295,11 @@ const NodeMap: React.FC = () => {
             {selectedNode.pictureURL && (
               <img src={selectedNode.pictureURL} alt={selectedNode.label} className="w-full rounded mb-3" />
             )}
-            <p className="text-gray-800 whitespace-pre-wrap">{selectedNode.bio}</p>
+            <p className="text-gray-800 whitespace-pre-wrap">
+              {selectedNode.deactivatedAt !== undefined && selectedNode.deactivatedAt !== null && selectedNode.deactivatedAt <= selectedEpisode
+                ? `${selectedNode.label} røk ut i episode ${selectedNode.deactivatedAt}`
+                : selectedNode.bio || 'Ingen bio tilgjengelig'}
+            </p>
             <button onClick={() => setSelectedNode(null)} className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
               Close
             </button>
