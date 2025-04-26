@@ -35,6 +35,7 @@ type EnemyRow = {
 type PairRow = {
   friend_1: number;
   friend_2: number;
+  episode: number; // <-- important fix!
 };
 
 type NodeData = {
@@ -48,14 +49,8 @@ type NodeData = {
 
 // color palette for pairs
 const PALETTE = [
-  '#f032e6', // magenta
-  '#f58231', // orange
-  '#46f0f0', // cyan
-  '#ffe119', // yellow
-  '#6a3d9a', // deep purple
-  '#ff9f80', // coral
-  '#008080', // teal
-  '#808000', // olive
+  '#f032e6', '#f58231', '#46f0f0', '#ffe119',
+  '#6a3d9a', '#ff9f80', '#008080', '#808000',
 ];
 
 // cytoscape default style
@@ -119,21 +114,16 @@ const defaultStyle = [
       'label': 'data(label)',
       'font-size': 10,
       'background-color': '#0074D9',
-    }
+    },
   }
 ];
 
 const NodeMap: React.FC = () => {
-  // raw data from Supabase
   const [people, setPeople] = useState<PersonRow[]>([]);
   const [friends, setFriends] = useState<FriendRow[]>([]);
   const [enemies, setEnemies] = useState<EnemyRow[]>([]);
   const [pairs, setPairs] = useState<PairRow[]>([]);
-
-  // filtered graph elements
   const [elements, setElements] = useState<ElementDefinition[]>([]);
-
-  // UI state
   const [selectedEpisode, setSelectedEpisode] = useState<number>(1);
   const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<{
@@ -153,61 +143,51 @@ const NodeMap: React.FC = () => {
       const [
         { data: p, error: pErr },
         { data: f, error: fErr },
-        { data: e, error: eErr },
-        { data: pr, error: prErr },
       ] = await Promise.all([
         supabase.from<'people', PersonRow>('people').select('id, name, pictureURL, bio, arrived, deactivated'),
         supabase.from<'friends', FriendRow>('friends').select('friend_1, friend_2, emoji, context, episode'),
-        supabase.from<'enemies', EnemyRow>('enemies').select('enemy_1, enemy_2, emoji, context'),
-        supabase.from<'pairs', PairRow>('pairs').select('friend_1, friend_2'),
+        supabase.from<'pairs', PairRow>('pairs').select('friend_1, friend_2, episode'),
       ]);
 
-      if (pErr || fErr || eErr || prErr) {
-        console.error('Error fetching data:', pErr, fErr, eErr, prErr);
+      if (pErr || fErr) {
+        console.error('Error fetching data:', pErr, fErr,);
         return;
       }
 
       setPeople(p || []);
       setFriends(f || []);
-      setEnemies(e || []);
-      setPairs(pr || []);
     };
     loadData();
   }, []);
 
-  // 2️⃣ Recompute Cytoscape elements when data or episode filter changes
+  // 2️⃣ Recompute elements on data or episode change
   useEffect(() => {
-    // build color map for pairs
     const colorMap: Record<string, string> = {};
-    pairs.forEach((pr, i) => {
-      const col = PALETTE[i % PALETTE.length];
-      colorMap[String(pr.friend_1)] = col;
-      colorMap[String(pr.friend_2)] = col;
-    });
+    pairs
+      .filter(p => p.episode === selectedEpisode)
+      .forEach((pr, i) => {
+        const col = PALETTE[i % PALETTE.length];
+        colorMap[String(pr.friend_1)] = col;
+        colorMap[String(pr.friend_2)] = col;
+      });
 
     const nodes = people
-  .filter(p => p.arrived <= selectedEpisode) // ❗ only show if ARRIVED
-  .map(p => {
-    const isInactive = p.deactivated !== null && p.deactivated <= selectedEpisode;
-    
-    return {
-      data: {
-        id: String(p.id),
-        label: p.name,
-        pictureURL: p.pictureURL || undefined,
-        bio: p.bio || undefined,
-        borderColor: colorMap[String(p.id)] || '#f00',
-        borderStyle: colorMap[String(p.id)] ? 'solid' : 'dotted',
-      },
-      classes: isInactive ? 'inactive' : '',
-    };
-  });
+      .filter(p => p.arrived <= selectedEpisode)
+      .map(p => {
+        const isInactive = p.deactivated !== null && p.deactivated <= selectedEpisode;
+        return {
+          data: {
+            id: String(p.id),
+            label: p.name,
+            pictureURL: p.pictureURL || undefined,
+            bio: p.bio || undefined,
+            borderColor: colorMap[String(p.id)] || '#f00',
+            borderStyle: colorMap[String(p.id)] ? 'solid' : 'dotted',
+          },
+          classes: isInactive ? 'inactive' : '',
+        };
+      });
 
-
-    
-    
-
-    // only show friends from the selected episode
     const friendEdges = friends
       .filter(f => f.episode === selectedEpisode)
       .map((f, i) => ({
@@ -221,7 +201,6 @@ const NodeMap: React.FC = () => {
         },
       }));
 
-    // enemies (no filter)
     const enemyEdges = enemies.map((e, i) => ({
       data: {
         id: `en${i}`,
@@ -236,7 +215,7 @@ const NodeMap: React.FC = () => {
     setElements([...nodes, ...friendEdges, ...enemyEdges]);
   }, [people, friends, enemies, pairs, selectedEpisode]);
 
-  // 3️⃣ Initialize Cytoscape on mount
+  // 3️⃣ Initialize Cytoscape once
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -274,35 +253,29 @@ const NodeMap: React.FC = () => {
     cyRef.current.layout({ name: 'cose', animate: true, fit: true }).run();
   }, [elements]);
 
-  // --- render ---
   return (
     <>
       <div className="flex flex-col items-center justify-center p-4 bg-gray-800">
-        {/* Episode filter buttons */}
+        {/* Episode filter */}
         <div className="flex space-x-2 p-4 bg-gray-800">
-          {Array.from({ length: 10 }, (_, i) => {
-            const ep = i + 1;
-            return (
-              <button
-                key={ep}
-                onClick={() => setSelectedEpisode(ep)}
-                className={
-                  `px-3 py-1 rounded text-sm font-medium ` +
-                  (selectedEpisode === ep
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-600 text-gray-200 hover:bg-gray-500')
-                }
-              >
-                Episode {ep}
-              </button>
-            );
-          })}
+          <button className="px-3 py-1 rounded text-sm font-medium bg-gray-600 text-gray-200">
+            Episoder:
+          </button>
+          {Array.from({ length: 17 }, (_, i) => (
+            <button
+              key={i + 1}
+              onClick={() => setSelectedEpisode(i + 1)}
+              className={`px-3 py-1 rounded text-sm font-medium ${selectedEpisode === i + 1 ? 'bg-blue-500 text-white' : 'bg-gray-600 text-gray-200 hover:bg-gray-500'}`}
+            >
+              {i + 1}
+            </button>
+          ))}
         </div>
 
-        {/* Cytoscape container */}
+        {/* Graph */}
         <div ref={containerRef} className="w-full h-[calc(100vh-64px)] bg-gradient-to-br from-gray-900 via-purple-900 to-black" />
 
-        {/* Node detail modal */}
+        {/* Node Modal */}
         {selectedNode && (
           <div className="fixed inset-0 bg-black/25 flex items-center justify-center" onClick={() => setSelectedNode(null)}>
             <div className="bg-white p-5 rounded-lg max-w-md max-h-[80%] overflow-y-auto z-10" onClick={e => e.stopPropagation()}>
@@ -316,7 +289,7 @@ const NodeMap: React.FC = () => {
           </div>
         )}
 
-        {/* Edge detail modal */}
+        {/* Edge Modal */}
         {selectedEdge && (
           <div className="fixed inset-0 bg-black/25 flex items-center justify-center" onClick={() => setSelectedEdge(null)}>
             <div className="bg-white p-5 rounded-lg max-w-md max-h-[80%] overflow-y-auto z-10" onClick={e => e.stopPropagation()}>

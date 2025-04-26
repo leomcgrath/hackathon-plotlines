@@ -250,23 +250,7 @@ const PeopleCards: React.FC = () => {
                     )}
 
                     <div className="flex items-center justify-between space-x-2">
-                      <button
-                        onClick={e => { e.stopPropagation(); onPairButton(person.id); }}
-                        className={`px-3 py-1 rounded ${
-                          pairInfo && !pairing
-                            ? 'bg-red-500 text-white'
-                            : isFirst
-                            ? 'bg-yellow-500 text-white'
-                            : 'bg-blue-500 text-white'
-                        }`}
-                      >
-                        {pairInfo && !pairing
-                          ? 'Unpair'
-                          : isFirst
-                          ? 'Cancel'
-                          : 'Pair Up'}
-                      </button>
-
+                      
                       <div className="flex space-x-2">
                         <button
                           onClick={e => { e.stopPropagation(); removePerson(person.id); }}
