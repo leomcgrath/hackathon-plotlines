@@ -12,7 +12,7 @@ export default function Home() {
 
   return (
     <>
-      <div className="width-full h-screen bg-white flex flex-row items-center justify-center">
+      <div className="width-full h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex flex-row items-center justify-center">
         <NodeMap/>
       </div>
     </>

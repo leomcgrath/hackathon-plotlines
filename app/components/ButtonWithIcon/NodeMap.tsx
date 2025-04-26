@@ -42,10 +42,8 @@ type NodeData = {
 
 // color palette for pairs
 const PALETTE = [
-  '#4363d8', // blue
   '#f032e6', // magenta
   '#f58231', // orange
-  '#911eb4', // purple
   '#46f0f0', // cyan
   '#ffe119', // yellow
   '#6a3d9a', // deep purple
@@ -55,28 +53,36 @@ const PALETTE = [
 ];
 
 const defaultStyle = [
-  {
-    selector: 'node',
-    style: {
-      'background-color': '#0074D9',
-      label: 'data(label)',
-      color: '#fff',
-      'text-valign': 'center',
-      'text-halign': 'center',
-      'font-size': 10,
-      'border-width': 1,
-      'border-color': 'data(borderColor)',
-      'border-style': 'data(borderStyle)',
-    } as any,
-  },
-  {
-    selector: 'node.inactive',
-    style: {
-      'background-color': '#ccc',
-      'border-width': 0,
-      'border-style': 'none',
-    } as any,
-  },
+    {
+      selector: 'node',
+      style: {
+        // use the pictureURL as the background image
+        'background-image': 'data(pictureURL)',
+        // fit the image to the entire node area
+        'background-fit': 'cover',
+        'background-clip': 'node',
+        // fallback color if pictureURL is missing
+        'background-color': '#0074D9',
+        // remove the label
+        'label': '',
+        // keep borders as before
+        'border-width': 1,
+        'border-color': 'data(borderColor)',
+        'border-style': 'data(borderStyle)',
+        // size up your nodes as needed
+        'width': 50,
+        'height': 50,
+      } as any,
+    },
+    {
+      selector: 'node.inactive',
+      style: {
+        // still grey out inactives
+        'background-color': '#ccc',
+        'border-width': 0,
+        'border-style': 'none',
+      } as any,
+    },
   {
     selector: 'edge',
     style: {
@@ -112,7 +118,16 @@ const defaultStyle = [
       'text-justification': 'center',
       'text-margin-y': 0,
     } as any,
+    
   },
+  {
+  selector: 'node[!pictureURL]',
+  style: {
+    'label': 'data(label)',
+    'font-size': 10,
+    'background-color': '#0074D9',
+  }
+}
 ];
 
 const NodeMap: React.FC = () => {
@@ -231,7 +246,7 @@ const NodeMap: React.FC = () => {
 
   return (
     <>
-      <div ref={containerRef} className="w-full h-screen bg-gray-100" />
+      <div ref={containerRef} className="w-full h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-black" />
 
       {selectedNode && (
         <div className="fixed inset-0 bg-black/25 flex items-center justify-center" onClick={() => setSelectedNode(null)}>
