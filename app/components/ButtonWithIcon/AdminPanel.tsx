@@ -10,31 +10,36 @@ const supabase = createClient(
 type Person     = { id: number; name: string; isActive: boolean; pictureURL: string | null; bio: string | null };
 type FriendConn = { friend_1: number; friend_2: number; emoji: string | null; context: string | null };
 type EnemyConn  = { enemy_1: number; enemy_2: number; emoji: string | null; context: string | null };
+type Room       = { id: number; name: string };
 
 const AdminPanel: React.FC = () => {
   const [people, setPeople]     = useState<Person[]>([]);
   const [friends, setFriends]   = useState<FriendConn[]>([]);
   const [enemies, setEnemies]   = useState<EnemyConn[]>([]);
+  const [rooms, setRooms]       = useState<Room[]>([]);
 
-  const [newName, setNewName]             = useState('');
-  const [newPictureURL, setNewPictureURL] = useState('');
-  const [newBio, setNewBio]               = useState('');
+  const [newName, setNewName]               = useState('');
+  const [newPictureURL, setNewPictureURL]   = useState('');
+  const [newBio, setNewBio]                 = useState('');
 
-  const [firstFriend, setFirstFriend]     = useState<number | ''>('');
-  const [secondFriend, setSecondFriend]   = useState<number | ''>('');
-  const [friendEmoji, setFriendEmoji]     = useState('');
-  const [friendContext, setFriendContext] = useState('');
+  const [firstFriend, setFirstFriend]       = useState<number | ''>('');
+  const [secondFriend, setSecondFriend]     = useState<number | ''>('');
+  const [friendEmoji, setFriendEmoji]       = useState('');
+  const [friendContext, setFriendContext]   = useState('');
 
-  const [firstEnemy, setFirstEnemy]       = useState<number | ''>('');
-  const [secondEnemy, setSecondEnemy]     = useState<number | ''>('');
-  const [enemyEmoji, setEnemyEmoji]       = useState('');
-  const [enemyContext, setEnemyContext]   = useState('');
+  const [firstEnemy, setFirstEnemy]         = useState<number | ''>('');
+  const [secondEnemy, setSecondEnemy]       = useState<number | ''>('');
+  const [enemyEmoji, setEnemyEmoji]         = useState('');
+  const [enemyContext, setEnemyContext]     = useState('');
+
+  const [newRoomName, setNewRoomName]       = useState('');
 
   useEffect(() => {
     (async () => {
       const [{ data: ppl,    error: pErr },
              { data: fr,     error: fErr },
-             { data: en,     error: eErr }] = await Promise.all([
+             { data: en,     error: eErr },
+             { data: rms,    error: rErr }] = await Promise.all([
         supabase
           .from('people')
           .select<any, Person>('id, name, isActive, pictureURL, bio')
@@ -45,15 +50,21 @@ const AdminPanel: React.FC = () => {
         supabase
           .from('enemies')
           .select<any, EnemyConn>('enemy_1, enemy_2, emoji, context'),
+        supabase
+          .from('rooms')
+          .select<any, Room>('id, name')
+          .order('name'),
       ]);
 
       if (pErr) console.error('people:', pErr);
       if (fErr) console.error('friends:', fErr);
       if (eErr) console.error('enemies:', eErr);
+      if (rErr) console.error('rooms:', rErr);
 
       if (ppl)  setPeople(ppl);
       if (fr)   setFriends(fr);
       if (en)   setEnemies(en);
+      if (rms)  setRooms(rms);
     })();
   }, []);
 
@@ -122,8 +133,28 @@ const AdminPanel: React.FC = () => {
     setEnemies(e => e.filter(x => !(x.enemy_1 === e1 && x.enemy_2 === e2)));
   };
 
+  // --- rooms CRUD ---
+  const addRoom = async () => {
+    if (!newRoomName.trim()) return;
+    const { data, error } = await supabase
+      .from('rooms')
+      .insert({ name: newRoomName })
+      .select('id, name')
+      .single();
+    if (error) console.error(error);
+    else if (data) {
+      setRooms(r => [...r, data]);
+      setNewRoomName('');
+    }
+  };
+
+  const removeRoom = async (id: number) => {
+    await supabase.from('rooms').delete().eq('id', id);
+    setRooms(r => r.filter(x => x.id !== id));
+  };
+
   return (
-    <div className="p-6 max-w-2xl mx-auto space-y-8 bg-white shadow-lg rounded-lg text-gray-800">
+    <div className="p-6 h-[calc(100vh-100px)] overflow-auto max-w-2xl mx-auto space-y-8 bg-white shadow-lg rounded-lg text-gray-800">
       {/* PEOPLE */}
       <h2 className="text-2xl font-bold">Manage People</h2>
       <div className="flex flex-col gap-2">
@@ -132,20 +163,6 @@ const AdminPanel: React.FC = () => {
         <textarea placeholder="Bio" value={newBio} onChange={e => setNewBio(e.target.value)} className="border rounded px-2 py-1 h-24" />
         <button onClick={addPerson} className="bg-blue-600 text-white px-4 py-1 rounded self-start">Add Person</button>
       </div>
-      <ul className="space-y-2">
-        {people.map(p => (
-          <li key={p.id} className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <span>{p.name}</span>
-              <label className="flex items-center gap-1">
-                <input type="checkbox" checked={p.isActive} onChange={() => toggleActive(p.id, !p.isActive)} />
-                <span className="text-sm">{p.isActive ? 'Active' : 'Inactive'}</span>
-              </label>
-            </div>
-            <button onClick={() => removePerson(p.id)} className="text-red-600 hover:underline">Remove</button>
-          </li>
-        ))}
-      </ul>
 
       {/* FRIENDS */}
       <h2 className="text-2xl font-bold">Manage Friends</h2>
@@ -201,6 +218,30 @@ const AdminPanel: React.FC = () => {
           <li key={`${e.enemy_1}-${e.enemy_2}`} className="flex justify-between items-center">
             <span>{people.find(p => p.id === e.enemy_1)?.name} → {people.find(p => p.id === e.enemy_2)?.name} {e.emoji && <strong>{e.emoji}</strong>} {e.context && <>({e.context})</>}</span>
             <button onClick={() => removeEnemy(e.enemy_1, e.enemy_2)} className="text-red-600 hover:underline">Remove</button>
+          </li>
+        ))}
+      </ul>
+
+      {/* ROOMS */}
+      <h2 className="text-2xl font-bold">Manage Rooms</h2>
+      <div className="flex gap-2 items-center">
+        <input
+          placeholder="Room name"
+          value={newRoomName}
+          onChange={e => setNewRoomName(e.target.value)}
+          className="border rounded px-2 py-1 flex-1"
+        />
+        <button onClick={addRoom} className="bg-indigo-600 text-white px-4 py-1 rounded">
+          Add Room
+        </button>
+      </div>
+      <ul className="space-y-1">
+        {rooms.map(r => (
+          <li key={r.id} className="flex justify-between items-center">
+            <span>{r.name}</span>
+            <button onClick={() => removeRoom(r.id)} className="text-red-600 hover:underline">
+              Remove
+            </button>
           </li>
         ))}
       </ul>
