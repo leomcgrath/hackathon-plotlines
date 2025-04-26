@@ -223,7 +223,7 @@ const AdminPanel: React.FC = () => {
           </div>
           <div className="flex gap-2">
             <select value={pairEpisode} onChange={e => setPairEpisode(Number(e.target.value))} className="border rounded px-2 py-1 w-24">
-              {Array.from({ length: 10 }, (_, i) => <option key={i+1} value={i+1}>Ep {i+1}</option>)}
+              {Array.from({ length: 17 }, (_, i) => <option key={i+1} value={i+1}>Ep {i+1}</option>)}
             </select>
             <button onClick={addPair} className="bg-purple-600 text-white px-4 py-1 rounded">Add Pair</button>
           </div>
