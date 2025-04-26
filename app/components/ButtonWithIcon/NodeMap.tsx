@@ -185,26 +185,27 @@ const NodeMap: React.FC = () => {
       colorMap[String(pr.friend_2)] = col;
     });
 
-    // nodes
-    const nodes = people.map(p => {
-      // Check if the node should be shown
-      const isVisible = p.arrived <= selectedEpisode;
-      // Check if the node should be grayed out
-      const isInactive = p.deactivated !== null && p.deactivated <= selectedEpisode;
+    const nodes = people
+  .filter(p => p.arrived <= selectedEpisode) // ❗ only show if ARRIVED
+  .map(p => {
+    const isInactive = p.deactivated !== null && p.deactivated <= selectedEpisode;
+    
+    return {
+      data: {
+        id: String(p.id),
+        label: p.name,
+        pictureURL: p.pictureURL || undefined,
+        bio: p.bio || undefined,
+        borderColor: colorMap[String(p.id)] || '#f00',
+        borderStyle: colorMap[String(p.id)] ? 'solid' : 'dotted',
+      },
+      classes: isInactive ? 'inactive' : '',
+    };
+  });
 
-      return {
-        data: {
-          id: String(p.id),
-          label: p.name,
-          pictureURL: p.pictureURL || undefined,
-          bio: p.bio || undefined,
-          borderColor: colorMap[String(p.id)] || '#f00',
-          borderStyle: colorMap[String(p.id)] ? 'solid' : 'dotted',
-        },
-        classes: isInactive ? 'inactive' : '',
-        visible: isVisible, // Only show node if it should be visible based on the episode
-      };
-    });
+
+    
+    
 
     // only show friends from the selected episode
     const friendEdges = friends

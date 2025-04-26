@@ -69,25 +69,14 @@ const AdminPanel: React.FC = () => {
     if (!newName.trim()) return;
     const { data, error } = await supabase
       .from('people')
-      .insert({ name: newName, isActive: true, pictureURL: newPictureURL || null, bio: newBio || null })
-      .select('id, name, isActive, pictureURL, bio')
+      .insert({ name: newName, pictureURL: newPictureURL || null, bio: newBio || null })
+      .select('id, name, pictureURL, bio')
       .single();
     if (error) console.error(error);
     else if (data) {
       setPeople(p => [...p, data]);
       setNewName(''); setNewPictureURL(''); setNewBio('');
     }
-  };
-
-  const removePerson = async (id: number) => {
-    await supabase.from('people').delete().eq('id', id);
-    setPeople(p => p.filter(x => x.id !== id));
-    setFriends(f => f.filter(x => x.friend_1 !== id && x.friend_2 !== id));
-  };
-
-  const toggleActive = async (id: number, next: boolean) => {
-    await supabase.from('people').update({ isActive: next }).eq('id', id);
-    setPeople(p => p.map(x => x.id === id ? { ...x, isActive: next } : x));
   };
 
   // --- Friends CRUD ---
@@ -148,7 +137,7 @@ const AdminPanel: React.FC = () => {
 
 
       {/* FRIENDS */}
-      <h2 className="text-2xl font-bold">Manage Friends</h2>
+      <h2 className="text-2xl font-bold">Manage events</h2>
       <div className="flex flex-col gap-2">
         <div className="flex gap-2 items-center">
           <select value={firstFriend} onChange={e => setFirstFriend(Number(e.target.value))} className="border rounded px-2 py-1">
@@ -167,7 +156,7 @@ const AdminPanel: React.FC = () => {
           <select value={friendEpisode} onChange={e => setFriendEpisode(Number(e.target.value))} className="border rounded px-2 py-1 w-24">
             {Array.from({ length: 10 }, (_, i) => <option key={i+1} value={i+1}>Ep {i+1}</option>)}
           </select>
-          <button onClick={addFriend} className="bg-green-600 text-white px-4 py-1 rounded">Add Friend</button>
+          <button onClick={addFriend} className="bg-green-600 text-white px-4 py-1 rounded">Add Event</button>
         </div>
       </div>
       <ul className="space-y-1">
