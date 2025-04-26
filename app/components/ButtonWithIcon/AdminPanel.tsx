@@ -7,7 +7,7 @@ const supabase = createClient(
   import.meta.env.VITE_SUPABASE_ANON_KEY!
 );
 
-type Person     = { id: number; name: string; isActive: boolean };
+type Person     = { id: number; name: string; isActive: boolean; pictureURL: string | null; bio: string | null };
 type FriendConn = { friend_1: number; friend_2: number };
 type EnemyConn  = { enemy_1: number;  enemy_2: number  };
 
@@ -16,11 +16,13 @@ const AdminPanel: React.FC = () => {
   const [friends, setFriends]   = useState<FriendConn[]>([]);
   const [enemies, setEnemies]   = useState<EnemyConn[]>([]);
 
-  const [newName, setNewName]           = useState('');
-  const [firstFriend, setFirstFriend]   = useState<number | ''>('');
-  const [secondFriend, setSecondFriend] = useState<number | ''>('');
-  const [firstEnemy, setFirstEnemy]     = useState<number | ''>('');
-  const [secondEnemy, setSecondEnemy]   = useState<number | ''>('');
+  const [newName, setNewName]             = useState('');
+  const [newPictureURL, setNewPictureURL] = useState('');
+  const [newBio, setNewBio]               = useState('');
+  const [firstFriend, setFirstFriend]     = useState<number | ''>('');
+  const [secondFriend, setSecondFriend]   = useState<number | ''>('');
+  const [firstEnemy, setFirstEnemy]       = useState<number | ''>('');
+  const [secondEnemy, setSecondEnemy]     = useState<number | ''>('');
 
   // --- initial fetch ---
   useEffect(() => {
@@ -28,9 +30,12 @@ const AdminPanel: React.FC = () => {
       const [{ data: ppl,    error: pErr },
              { data: fr,     error: fErr },
              { data: en,     error: eErr }] = await Promise.all([
-        supabase.from('people').select('id, name, isActive').order('name'),
-        supabase.from('friends').select('friend_1, friend_2'),
-        supabase.from('enemies').select('enemy_1, enemy_2'),
+        supabase
+          .from('people')
+          .select<any, Person>('id, name, isActive, pictureURL, bio')
+          .order('name'),
+        supabase.from('friends').select<any, FriendConn>('friend_1, friend_2'),
+        supabase.from('enemies').select<any, EnemyConn>('enemy_1, enemy_2'),
       ]);
 
       if (pErr)  console.error('people:', pErr);
@@ -48,13 +53,20 @@ const AdminPanel: React.FC = () => {
     if (!newName.trim()) return;
     const { data, error } = await supabase
       .from('people')
-      .insert({ name: newName, isActive: true })
-      .select('id, name, isActive')
+      .insert({
+        name: newName,
+        isActive: true,
+        pictureURL: newPictureURL || null,
+        bio: newBio || null,
+      })
+      .select('id, name, isActive, pictureURL, bio')
       .single();
     if (error) console.error(error);
-    else {
+    else if (data) {
       setPeople(p => [...p, data]);
       setNewName('');
+      setNewPictureURL('');
+      setNewBio('');
     }
   };
 
@@ -81,7 +93,7 @@ const AdminPanel: React.FC = () => {
     const { data, error } = await supabase
       .from('friends')
       .insert({ friend_1: firstFriend, friend_2: secondFriend })
-      .select(); // returns [{ friend_1, friend_2 }]
+      .select();
     if (error) console.error(error);
     else if (data?.[0]) {
       setFriends(f => [...f, data[0]]);
@@ -130,19 +142,32 @@ const AdminPanel: React.FC = () => {
     <div className="p-6 max-w-2xl mx-auto space-y-8 bg-white shadow-lg rounded-lg text-gray-800">
       {/* PEOPLE */}
       <h2 className="text-2xl font-bold">Manage People</h2>
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2">
         <input
           type="text"
           value={newName}
           onChange={e => setNewName(e.target.value)}
           placeholder="New person name"
-          className="border rounded px-2 py-1 flex-grow"
+          className="border rounded px-2 py-1"
+        />
+        <input
+          type="text"
+          value={newPictureURL}
+          onChange={e => setNewPictureURL(e.target.value)}
+          placeholder="Picture URL"
+          className="border rounded px-2 py-1"
+        />
+        <textarea
+          value={newBio}
+          onChange={e => setNewBio(e.target.value)}
+          placeholder="Bio"
+          className="border rounded px-2 py-1 h-24"
         />
         <button
           onClick={addPerson}
-          className="bg-blue-600 text-white px-4 py-1 rounded"
+          className="bg-blue-600 text-white px-4 py-1 rounded self-start"
         >
-          Add
+          Add Person
         </button>
       </div>
       <ul className="space-y-2">
