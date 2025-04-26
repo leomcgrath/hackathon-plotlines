@@ -235,16 +235,19 @@ const NodeMap: React.FC = () => {
     });
 
     cyRef.current.on('tap', 'node', evt => setSelectedNode((evt.target as any).data()));
-    cyRef.current.on('tap', 'edge', evt => {
-      const d = (evt.target as any).data();
-      setSelectedEdge({
-        source: d.source,
-        target: d.target,
-        type: d.type,
-        emoji: d.emoji,
-        context: d.context,
+    cyRef.current.on('tap', 'node', evt => {
+      const nodeData = evt.target.data();
+    
+      setSelectedNode({
+        id: nodeData.id,
+        label: nodeData.label,
+        pictureURL: nodeData.pictureURL,
+        bio: nodeData.bio,
+        borderColor: nodeData.borderColor,
+        borderStyle: nodeData.borderStyle,
       });
     });
+    
 
     return () => { cyRef.current?.destroy(); };
   }, []);
@@ -286,7 +289,7 @@ const NodeMap: React.FC = () => {
 
         {/* Node Modal */}
         {selectedNode && (
-          <div className="fixed inset-0 bg-black/25 flex items-center justify-center" onClick={() => setSelectedNode(null)}>
+          <div className="fixed inset-0 bg-black/25 flex items-center justify-center text-black" onClick={() => setSelectedNode(null)}>
             <div className="bg-white p-5 rounded-lg max-w-md max-h-[80%] overflow-y-auto z-10" onClick={e => e.stopPropagation()}>
               <h3 className="text-xl font-semibold mb-2">{selectedNode.label}</h3>
               {selectedNode.pictureURL && <img src={selectedNode.pictureURL} alt={selectedNode.label} className="w-full rounded mb-3" />}
