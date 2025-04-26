@@ -1,6 +1,5 @@
 import type { Route } from "./+types/home";
 import { NavLink, useNavigate } from "react-router";
-import NodeMap from "~/components/ButtonWithIcon/NodeMap";
 import AdminPanel from "~/components/ButtonWithIcon/AdminPanel";
 import PeopleCards from "~/components/ButtonWithIcon/PeopleCards";
 

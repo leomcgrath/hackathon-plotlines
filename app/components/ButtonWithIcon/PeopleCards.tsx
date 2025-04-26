@@ -10,27 +10,30 @@ const supabase = createClient(
 type Person = {
   id: number;
   name: string;
-  isActive: boolean;
   pictureURL: string | null;
   bio: string | null;
+  arrived: number;
+  deactivated: number | null;
 };
+
 type Pair = { friend_1: number; friend_2: number };
 
 const PeopleCards: React.FC = () => {
   const [people, setPeople] = useState<Person[]>([]);
-  const [pairs, setPairs]   = useState<Pair[]>([]);
+  const [pairs, setPairs] = useState<Pair[]>([]);
   const [pairing, setPairing] = useState<number | null>(null);
+  const [editingPerson, setEditingPerson] = useState<Person | null>(null);
 
   // fetch people and existing pairs
   useEffect(() => {
     (async () => {
       const [
-        { data: ppl,   error: pErr },
-        { data: pr,    error: prErr }
+        { data: ppl, error: pErr },
+        { data: pr, error: prErr }
       ] = await Promise.all([
         supabase
           .from('people')
-          .select('id, name, isActive, pictureURL, bio')
+          .select('id, name, pictureURL, bio, arrived, deactivated')
           .order('name'),
         supabase
           .from('pairs')
@@ -40,14 +43,9 @@ const PeopleCards: React.FC = () => {
       if (pErr) console.error('people:', pErr);
       if (prErr) console.error('pairs:', prErr);
       if (ppl) setPeople(ppl);
-      if (pr)  setPairs(pr);
+      if (pr) setPairs(pr);
     })();
   }, []);
-
-  const toggleActive = async (id: number, next: boolean) => {
-    await supabase.from('people').update({ isActive: next }).eq('id', id);
-    setPeople(p => p.map(x => x.id === id ? { ...x, isActive: next } : x));
-  };
 
   const removePerson = async (id: number) => {
     await supabase.from('people').delete().eq('id', id);
@@ -58,7 +56,6 @@ const PeopleCards: React.FC = () => {
 
   // remove a pair connection
   const removePair = async (pairInfo: Pair) => {
-    // delete by matching both columns (order-insensitive)
     await Promise.all([
       supabase.from('pairs').delete().match(pairInfo),
       supabase.from('pairs').delete().match({ friend_1: pairInfo.friend_2, friend_2: pairInfo.friend_1 }),
@@ -71,17 +68,14 @@ const PeopleCards: React.FC = () => {
     ));
   };
 
-  // start, cancel, or split pairing
   const onPairButton = async (personId: number) => {
     const pairInfo = pairs.find(
       pr => pr.friend_1 === personId || pr.friend_2 === personId
     );
-    // if already paired and not in pairing mode, split them
     if (!pairing && pairInfo) {
       await removePair(pairInfo);
       return;
     }
-    // if toggling pairing on this person
     if (pairing === personId) {
       setPairing(null);
     } else {
@@ -96,7 +90,6 @@ const PeopleCards: React.FC = () => {
       setPairing(null);
       return;
     }
-    // prevent pairing with someone already paired
     if (pairs.some(pr => pr.friend_1 === id || pr.friend_2 === id)) return;
 
     const { data, error } = await supabase
@@ -108,6 +101,40 @@ const PeopleCards: React.FC = () => {
     if (error) console.error('Error pairing:', error);
     else if (data) setPairs(prev => [...prev, data]);
     setPairing(null);
+  };
+
+  // Start editing a person
+  const startEditing = (person: Person) => {
+    setEditingPerson(person);
+  };
+
+  // Cancel editing
+  const cancelEditing = () => {
+    setEditingPerson(null);
+  };
+
+  // Save edited person
+  const savePerson = async () => {
+    if (!editingPerson) return;
+    const { data, error } = await supabase
+      .from('people')
+      .update({
+        name: editingPerson.name,
+        bio: editingPerson.bio,
+        pictureURL: editingPerson.pictureURL,
+        arrived: editingPerson.arrived,
+        deactivated: editingPerson.deactivated,
+      })
+      .eq('id', editingPerson.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error saving person:', error);
+    } else if (data) {
+      setPeople(prev => prev.map(p => (p.id === data.id ? data : p)));
+      setEditingPerson(null);
+    }
   };
 
   return (
@@ -157,55 +184,107 @@ const PeopleCards: React.FC = () => {
               )}
 
               <div className="p-4 flex-1 flex flex-col">
-                <h3 className="text-xl font-semibold mb-2">{person.name}</h3>
-                <p className="text-sm text-gray-600 flex-1 overflow-auto mb-2">
-                  {person.bio || 'No bio available.'}
-                </p>
-
-                {!pairing && pairInfo && otherName && (
-                  <p className="text-sm text-green-700 mb-2">
-                    Paired up with: <strong>{otherName}</strong>
-                  </p>
-                )}
-
-                <div className="flex items-center justify-between space-x-2">
-                  <button
-                    onClick={e => { e.stopPropagation(); onPairButton(person.id); }}
-                    className={`px-3 py-1 rounded ${
-                      pairInfo && !pairing
-                        ? 'bg-red-500 text-white'
-                        : isFirst
-                        ? 'bg-yellow-500 text-white'
-                        : 'bg-blue-500 text-white'
-                    }`}
-                  >
-                    {pairInfo && !pairing
-                      ? 'Unpair'
-                      : isFirst
-                      ? 'Cancel'
-                      : 'Pair Up'}
-                  </button>
-
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={e => { e.stopPropagation(); toggleActive(person.id, !person.isActive); }}
-                      className={`px-3 py-1 rounded ${
-                        person.isActive
-                          ? 'bg-green-500 text-white'
-                          : 'bg-gray-300 text-gray-700'
-                      }`}
-                    >
-                      {person.isActive ? 'Active' : 'Inactive'}
-                    </button>
-
-                    <button
-                      onClick={e => { e.stopPropagation(); removePerson(person.id); }}
-                      className="text-red-600 hover:underline"
-                    >
-                      Remove
-                    </button>
+                {editingPerson?.id === person.id ? (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={editingPerson.name}
+                      onChange={(e) => setEditingPerson({ ...editingPerson, name: e.target.value })}
+                      className="w-full p-2 border rounded"
+                    />
+                    <input
+                      type="text"
+                      value={editingPerson.pictureURL || ''}
+                      onChange={(e) => setEditingPerson({ ...editingPerson, pictureURL: e.target.value })}
+                      placeholder="Picture URL"
+                      className="w-full p-2 border rounded"
+                    />
+                    <textarea
+                      value={editingPerson.bio || ''}
+                      onChange={(e) => setEditingPerson({ ...editingPerson, bio: e.target.value })}
+                      placeholder="Bio"
+                      className="w-full p-2 border rounded"
+                    />
+                    <div className="space-x-2">
+                      <input
+                        type="number"
+                        value={editingPerson.arrived}
+                        onChange={(e) => setEditingPerson({ ...editingPerson, arrived: parseInt(e.target.value) })}
+                        className="w-full p-2 border rounded"
+                        placeholder="Arrived"
+                      />
+                      <input
+                        type="number"
+                        value={editingPerson.deactivated || ''}
+                        onChange={(e) => setEditingPerson({ ...editingPerson, deactivated: parseInt(e.target.value) })}
+                        className="w-full p-2 border rounded"
+                        placeholder="Deactivated"
+                      />
+                    </div>
+                    <div className="space-x-2">
+                      <button
+                        onClick={savePerson}
+                        className="bg-green-500 text-white px-4 py-2 rounded"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={cancelEditing}
+                        className="bg-red-500 text-white px-4 py-2 rounded"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <>
+                    <h3 className="text-xl font-semibold mb-2">{person.name}</h3>
+                    <p className="text-sm text-gray-600 flex-1 overflow-auto mb-2">
+                      {person.bio || 'No bio available.'}
+                    </p>
+
+                    {!pairing && pairInfo && otherName && (
+                      <p className="text-sm text-green-700 mb-2">
+                        Paired up with: <strong>{otherName}</strong>
+                      </p>
+                    )}
+
+                    <div className="flex items-center justify-between space-x-2">
+                      <button
+                        onClick={e => { e.stopPropagation(); onPairButton(person.id); }}
+                        className={`px-3 py-1 rounded ${
+                          pairInfo && !pairing
+                            ? 'bg-red-500 text-white'
+                            : isFirst
+                            ? 'bg-yellow-500 text-white'
+                            : 'bg-blue-500 text-white'
+                        }`}
+                      >
+                        {pairInfo && !pairing
+                          ? 'Unpair'
+                          : isFirst
+                          ? 'Cancel'
+                          : 'Pair Up'}
+                      </button>
+
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={e => { e.stopPropagation(); removePerson(person.id); }}
+                          className="text-red-600 hover:underline"
+                        >
+                          Remove
+                        </button>
+
+                        <button
+                          onClick={e => { e.stopPropagation(); startEditing(person); }}
+                          className="text-blue-600 hover:underline"
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           );
