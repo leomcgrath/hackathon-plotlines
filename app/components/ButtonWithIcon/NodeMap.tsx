@@ -77,6 +77,26 @@ const defaultStyle = [
     {
       selector: 'node.inactive',
       style: {
+        // keep the original portrait but desaturate it completely
+        'filter': 'grayscale(100%)',
+    
+        // optionally dim it a bit to make actives “pop”
+        'opacity': 0.5,
+    
+        // give them a crisp black border for contrast
+        'border-width': 2,
+        'border-color': '#000',
+        'border-style': 'solid',
+    
+        // if you want a solid B&W fallback when no image is present:
+        'background-image': 'data(pictureURL)',
+        'background-color': '#fff',
+      } as any,
+    },
+    
+    {
+      selector: 'node.inactive',
+      style: {
         // still grey out inactives
         'background-color': '#ccc',
         'border-width': 0,
@@ -240,9 +260,19 @@ const NodeMap: React.FC = () => {
 
   useEffect(() => {
     if (!cyRef.current) return;
-    cyRef.current.json({ elements });
+  
+    cyRef.current.batch(() => {
+      // clear out everything
+      cyRef.current?.elements().remove();
+  
+      // add in your fresh set of elements
+      cyRef.current?.add(elements);
+    });
+  
+    // re-run the layout to make sure everything is in view
     cyRef.current.layout({ name: 'cose', animate: true, fit: true }).run();
   }, [elements]);
+  
 
   return (
     <>
