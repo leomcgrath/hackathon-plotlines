@@ -263,9 +263,10 @@ const NodeMap: React.FC = () => {
 
   return (
     <>
-      <div className="flex flex-col items-center justify-center p-4 bg-gray-800">
+      <div className="flex flex-col h-screen w-screen bg-gray-800">
+
         {/* Episode filter */}
-        <div className="flex space-x-2 p-4 bg-gray-800">
+        <div className="flex justify-center space-x-2 p-4 bg-gray-800 w-full h-16">
           <button className="px-3 py-1 rounded text-sm font-medium bg-gray-600 text-gray-200">
             Episoder:
           </button>
@@ -273,7 +274,7 @@ const NodeMap: React.FC = () => {
             <button
               key={i + 1}
               onClick={() => setSelectedEpisode(i + 1)}
-              className={`px-3 py-1 rounded text-sm font-medium ${selectedEpisode === i + 1 ? 'bg-blue-500 text-white' : 'bg-gray-600 text-gray-200 hover:bg-gray-500'}`}
+              className={`px-4 py-2 rounded text-base font-medium ${selectedEpisode === i + 1 ? 'bg-blue-500 text-white' : 'bg-gray-600 text-gray-200 hover:bg-gray-500'}`}
             >
               {i + 1}
             </button>
