@@ -99,7 +99,7 @@ const NodeMap: React.FC = () => {
       container: containerRef.current,
       elements: [],
       style: defaultStyle,
-      layout: { name: 'random' },
+      layout: { name: 'cose', animate: true, fit: true },
     });
 
     // show modal on node click
@@ -115,7 +115,7 @@ const NodeMap: React.FC = () => {
   useEffect(() => {
     if (!cyRef.current || elements.length === 0) return;
     cyRef.current.json({ elements });
-    cyRef.current.layout({ name: 'random' }).run();
+    cyRef.current.layout({ name: 'cose', animate: true, fit: true }).run();
   }, [elements]);
 
   return (
