@@ -133,25 +133,6 @@ const AdminPanel: React.FC = () => {
     setEnemies(e => e.filter(x => !(x.enemy_1 === e1 && x.enemy_2 === e2)));
   };
 
-  // --- rooms CRUD ---
-  const addRoom = async () => {
-    if (!newRoomName.trim()) return;
-    const { data, error } = await supabase
-      .from('rooms')
-      .insert({ name: newRoomName })
-      .select('id, name')
-      .single();
-    if (error) console.error(error);
-    else if (data) {
-      setRooms(r => [...r, data]);
-      setNewRoomName('');
-    }
-  };
-
-  const removeRoom = async (id: number) => {
-    await supabase.from('rooms').delete().eq('id', id);
-    setRooms(r => r.filter(x => x.id !== id));
-  };
 
   return (
     <div className="p-6 h-[calc(100vh-100px)] overflow-auto max-w-2xl mx-auto space-y-8 bg-white shadow-lg rounded-lg text-gray-800">
@@ -222,29 +203,7 @@ const AdminPanel: React.FC = () => {
         ))}
       </ul>
 
-      {/* ROOMS */}
-      <h2 className="text-2xl font-bold">Manage Rooms</h2>
-      <div className="flex gap-2 items-center">
-        <input
-          placeholder="Room name"
-          value={newRoomName}
-          onChange={e => setNewRoomName(e.target.value)}
-          className="border rounded px-2 py-1 flex-1"
-        />
-        <button onClick={addRoom} className="bg-indigo-600 text-white px-4 py-1 rounded">
-          Add Room
-        </button>
-      </div>
-      <ul className="space-y-1">
-        {rooms.map(r => (
-          <li key={r.id} className="flex justify-between items-center">
-            <span>{r.name}</span>
-            <button onClick={() => removeRoom(r.id)} className="text-red-600 hover:underline">
-              Remove
-            </button>
-          </li>
-        ))}
-      </ul>
+      
     </div>
   );
 };
