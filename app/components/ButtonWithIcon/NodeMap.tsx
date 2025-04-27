@@ -48,7 +48,7 @@ type NodeData = {
   bio?: string;
   borderColor?: string;
   borderStyle?: string;
-  deactivatedAt?: number | null; // 👈 Add deactivated info here
+  deactivatedAt?: number | null;
 };
 
 type EdgeData = {
@@ -127,7 +127,7 @@ const defaultStyle = [
       'font-size': 10,
       'background-color': '#0074D9',
     },
-  }
+  },
 ];
 
 const NodeMap: React.FC = () => {
@@ -139,6 +139,7 @@ const NodeMap: React.FC = () => {
   const [selectedEpisode, setSelectedEpisode] = useState<number>(1);
   const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<EdgeData | null>(null);
+  const [showHelp, setShowHelp] = useState<boolean>(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<Core | undefined>(undefined);
@@ -177,10 +178,8 @@ const NodeMap: React.FC = () => {
         colorMap[String(pr.pair_2)] = col;
       });
 
-    // Get a set of valid node IDs from the people data
     const validPeopleIds = new Set(people.map(p => String(p.id)));
 
-    // Filter and map nodes
     const nodes = people
       .filter(p => p.arrived !== null && p.arrived <= selectedEpisode)
       .map(p => ({
@@ -196,10 +195,9 @@ const NodeMap: React.FC = () => {
         classes: p.deactivated !== null && p.deactivated <= selectedEpisode ? 'inactive' : '',
       }));
 
-    // Filter invalid friend edges by checking if both friend_1 and friend_2 exist in validPeopleIds
     const friendEdges = friends
       .filter(f => f.episode === selectedEpisode)
-      .filter(f => validPeopleIds.has(String(f.friend_1)) && validPeopleIds.has(String(f.friend_2))) // Only keep valid friends
+      .filter(f => validPeopleIds.has(String(f.friend_1)) && validPeopleIds.has(String(f.friend_2)))
       .map((f, i) => ({
         data: {
           id: `fr${i}`,
@@ -212,9 +210,8 @@ const NodeMap: React.FC = () => {
         },
       }));
 
-    // Filter invalid enemy edges by checking if both enemy_1 and enemy_2 exist in validPeopleIds
     const enemyEdges = enemies
-      .filter(e => validPeopleIds.has(String(e.enemy_1)) && validPeopleIds.has(String(e.enemy_2))) // Only keep valid enemies
+      .filter(e => validPeopleIds.has(String(e.enemy_1)) && validPeopleIds.has(String(e.enemy_2)))
       .map((e, i) => ({
         data: {
           id: `en${i}`,
@@ -276,9 +273,29 @@ const NodeMap: React.FC = () => {
   }, [elements]);
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-gray-800">
+    <div className="relative flex flex-col h-screen w-screen bg-gray-800">
+      {/* ← BACK BUTTON */}
+      <div className="absolute top-4 left-4 z-10">
+        <button
+          onClick={() => window.history.back()}
+          className="px-3 py-1 bg-gray-600 text-gray-200 rounded hover:bg-gray-500 focus:outline-none"
+        >
+          ← Back
+        </button>
+      </div>
+
+      {/* HELP BUTTON */}
+      <div className="absolute bottom-4 right-4 z-10">
+        <button
+          onClick={() => setShowHelp(true)}
+          className="w-12 h-12 flex items-center justify-center rounded-full bg-gray-600 text-white text-xl font-bold hover:bg-indigo-500 focus:outline-none shadow-lg"
+        >
+          ?
+        </button>
+      </div>
+
       {/* Episode filter */}
-      <div className="flex justify-center space-x-2 p-4 w-full h-16 bg-gray-800">
+      <div className="flex justify-center space-x-2 p-4 w-full h-16 bg-[#1B1B24]">
         <button className="px-3 py-1 rounded text-sm font-medium bg-gray-600 text-gray-200">
           Episoder:
         </button>
@@ -286,15 +303,15 @@ const NodeMap: React.FC = () => {
           <button
             key={i}
             onClick={() => setSelectedEpisode(i + 1)}
-            className={`px-4 py-2 rounded text-base font-medium ${selectedEpisode === i + 1 ? 'bg-blue-500 text-white' : 'bg-gray-600 text-gray-200 hover:bg-gray-500'}`}
+            className={`px-4 py-2 rounded text-base font-medium ${selectedEpisode === i+1 ? 'bg-blue-500 text-white' : 'bg-gray-600 text-gray-200 hover:bg-gray-500'}`}
           >
-            {i + 1}
+            {i+1}
           </button>
         ))}
       </div>
 
       {/* Graph */}
-      <div ref={containerRef} className="w-full h-[calc(100vh-64px)] bg-#1B1B24"  />
+      <div ref={containerRef} className="w-full h-[calc(100vh-64px)] bg-[#1B1B24]" />
 
       {/* Node Modal */}
       {selectedNode && (
@@ -326,6 +343,27 @@ const NodeMap: React.FC = () => {
             )}
             <p className="text-gray-800 whitespace-pre-wrap">{selectedEdge.context || 'No context'}</p>
             <button onClick={() => setSelectedEdge(null)} className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Help Modal */}
+      {showHelp && (
+        <div className="fixed inset-0 bg-black/25 flex items-center justify-center" onClick={() => setShowHelp(false)}>
+          <div className="bg-white p-5 rounded-lg max-w-md max-h-[80%] overflow-y-auto z-10" onClick={e => e.stopPropagation()}>
+            <h3 className="text-xl font-semibold mb-2">Slik fungerer kartet:</h3>
+            <ul className="list-disc list-inside text-gray-800">
+              Sirkler viser spillerne. <br />
+              Fargede rammer viser hvem som fortsatt er med – grå betyr at spilleren har røket ut - øverste spiller røk ut sist. <br />
+              Like fargede rammer representerer rom på hotellet. <br />
+              Linjer kobler spillerne sammen basert på hva som har skjedd i episoden: <br />
+              Eks: 👿 viser til en heftig krangel eller kanskje et forræderi? <br />
+              Velg episode øverst for å se hvilke hendelser som har skjedd i løpet av den aktuelle episoden - helt uten fare for spoilere! <br />
+              Klikk på en emoji for å lese mer om hva som har skjedd 🌴 <br />
+            </ul>
+            <button onClick={() => setShowHelp(false)} className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
               Close
             </button>
           </div>
