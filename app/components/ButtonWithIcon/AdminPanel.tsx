@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { useNavigate } from "react-router";
+
 
 // Supabase client
 const supabase = createClient(
@@ -101,11 +103,24 @@ const AdminPanel: React.FC = () => {
     setPairs(prev => prev.filter(p => !(p.pair_1 === p1 && p.pair_2 === p2 && p.episode === episode)));
   };
 
+  const navigate = useNavigate();
+
+  const goToAdmin = () => {
+    navigate("/");
+  };
+
   return (
     <div className="h-screen overflow-auto bg-gray-900 text-gray-100 p-8">
       <div className="max-w-4xl mx-auto space-y-12">
         {/* Header */}
         <h1 className="text-4xl font-extrabold text-center">Admin Dashboard</h1>
+        {/* Admin Button */}
+      <button
+        className="absolute top-4 left-4 bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-full transition z-50"
+        onClick={goToAdmin}
+      >
+        Tilbake
+      </button>
 
         {/* People Section */}
         <section className="bg-gray-800 rounded-xl shadow-lg p-6">

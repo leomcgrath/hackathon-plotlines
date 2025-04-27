@@ -8,8 +8,20 @@ export default function ParadiseHotel() {
     navigate("/home");
   };
 
+  const goToAdmin = () => {
+    navigate("/admin");
+  };
+
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col">
+    <div className="relative min-h-screen bg-gray-900 text-white flex flex-col">
+      {/* Admin Button */}
+      <button
+        className="absolute top-4 right-4 bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-full transition z-50"
+        onClick={goToAdmin}
+      >
+        Admin
+      </button>
+
       {/* Toppbilde */}
       <div className="relative w-full h-[70vh] overflow-hidden">
         <img
