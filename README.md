@@ -1,31 +1,62 @@
 # Labyrintenfinale 2025
 
-Dette repoet er utgangspunkt for caseoppgaven i Labyrintenfinalen 2025. Her kan dere se et eksempel på en enkel frontendapp i React + Typescript + Vite og en enkel Express + TypeScript backend med et api for tips.
+Dette repoet er utgangspunkt for caseoppgaven i Labyrintenfinalen 2025. Labyrinten er en årlig konkurranse av Bekk consulting, hvor hvert vinnerlag blir sendt til en finale i Oslo. Laget jeg var en del av vant linjeforeningens konkurranse i Trondheim, og derfor var med til Oslo. Casen gikk ut på å utvikle et produkt for en norsk strømmetjeneste, som skulle hjelpe til å beholde på abonentene deres. Vi valgte derfor å lage "Plotlines". Plotlines skal være en integrert del av streamingtjenester som skal blio brukt på realityprogram. Hvis en seer faller av et program, eller lurer på hva som har skjedd tildigere, kan de åpne et interaktivt nodekart for å finne informasjonen.
 
-## Kom i gang
+### English:
+This repository serves as the starting point for the case challenge in Labyrintenfinalen 2025. Labyrinten is an annual competition organized by Bekk Consulting, where each winning team is sent to a final in Oslo. The team I was part of won our student association's competition in Trondheim, and therefore participated in the Oslo finals. The case focused on developing a product for a Norwegian streaming service aimed at helping them retain subscribers. We therefore created "Plotlines." Plotlines is designed to be an integrated part of streaming services specifically for reality shows. If a viewer falls behind on a show or wonders what happened previously, they can open an interactive node map to find the information.
 
-### Førstegangsoppsett
+## Overview
 
-1. Klon dette repoet til din lokale maskin. Åpne terminalen, naviger til mappen du vil ha repoet i og skriv kommandoen `git@github.com:bekk/labyrintenfinale-hack-sparrow.git`.
-2. Sjekk at du har node og npm installert på din maskin med `npm --version` og `node --version`. Hvis du på en av disse får `command not found`, må du installere det, feks med brew. Spør gjerne en coach om hjelp!
+This repository provides a starting point for the Labyrintenfinalen 2025 case challenge. It includes:
 
-### Kjøre opp backend
+- A React + TypeScript + Vite frontend
+- An Express + TypeScript backend with a tips API
+- A development environment setup for building a web application
 
-1. Naviger inn i backend med `cd backend`.
-2. Kjør `npm install` for å installere avhengigheter for backend.
-3. Kjør `npm run dev` for å kjøre opp backend. Denne vil da starte opp på port 8080.
-4. Åpne en nettleser på `localhost:8080/api/tips` for å verifisere at backend kjører.
 
-### Kjøre opp frontend
+## Example
 
-1. Åpne nytt terminalvindu og naviger til roten av repoet.
-2. Kjør `npm install` for å installere avhengigheter for frontend.
-3. Kjør `npm run dev`for å kjøre opp frontend. Den vil da starte opp på port 3000.
-4. Åpne nettleser på `localhost:3000` for å verifisere at frontend kjører.
-5. Hvis alt er satt opp riktig, så kan du også aksessere backend fra frontend på `localhost:3000/api/tips`. Dette er fordi vi har satt opp en proxy i viteconfigen som gjør at alle forespørseler til `/api` blir sendt til backend.
+![First page](image.png)
 
-## Få ting ut i den store verden
+![Second page](image-1.png)
 
-Vi bruker Heroku for å hoste appen: https://hack-sparrow-5f3cee7a3ef8.herokuapp.com/.
+## Getting Started
 
-For å dytte ting ut hit trenger dere bare å pushe til git, så fikser heroku pipeline resten. Om dere trenger å gjøre noen endringer i Heroku, kan dere ta kontakt med en av oss coacher!
+### Prerequisites
+
+- Node.js (version 18 or newer recommended)
+- npm or yarn
+
+### Installation
+
+1. Clone the repository:
+    ```bash
+    git clone https://github.com/bekk/labyrintenfinale-hack-sparrow
+    cd labyrintenfinale-hack-sparrow
+    ```
+
+2. Install dependencies:
+    ```bash
+    # Install frontend dependencies
+    cd labiryntenfinale-hack-sparrow
+    npm install
+    
+
+3. Run the application:
+    ```bash
+    # In a new terminal, start the application
+    npm run dev
+    ```
+
+## Project Structure
+
+- `/frontend`: React application built with TypeScript and Vite
+- `/docs`: Documentation and additional resources
+
+## Development
+
+The frontend runs on `http://localhost:3000` by default,
+
+## License
+
+This project is provided as part of the Labyrintenfinalen 2025 challenge.
